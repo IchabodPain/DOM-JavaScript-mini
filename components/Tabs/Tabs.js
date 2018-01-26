@@ -6,7 +6,6 @@ class TabItem {
 
   select() {
     this.element.classList.add("Tabs__item-selected");
-    console.log('added -selected modifier to this Tabs__item');
   }
 
   deselect() {
@@ -15,21 +14,11 @@ class TabItem {
 }
 
 class TabLink {
-  constructor(element, parent) {
+  constructor(element) {
     this.element = element;// attach dom element to object
-    this.tabs = parent;// attach parent to object
-    this.tabItem = this.tabs.getTab(this.element.dataset.tab);// assign this to the associated tab using the parent's "getTab" method by passing it the correct data
-    this.tabItem = new TabItem(this.tabItem);// reassign this.tabItem to be a new instance of TabItem, passing it this.tabItem
-    this.element.addEventListener('click', (event) => {
-      event.stopPropagation();
-      this.tabs.updateActive(this);
-      this.select();
-      console.log(`You clicked ${this.element}!`);
-    });
   };
 
   select() {
-    console.log('Selected a tab link');
     this.element.classList.add("Tabs__link-selected");// select this link
     this.tabItem.select();// select the associated tab
   }
@@ -42,12 +31,26 @@ class TabLink {
 
 class Tabs {
   constructor(element) {
-    this.element = element;// attaches the dom node to the object as "this.element"
+    this.element = element;
+    this.tabContents = element.querySelectorAll(".Tabs__item");
+    this.tabContents = Array.from(this.tabContents).map((tabContent) => {  
+      return new TabItem(tabContent);
+    });
     this.links = element.querySelectorAll(".Tabs__link");  //Gets all Link elements of Tabs block
-    this.links = Array.from(this.links).map((link) => {  //Maps this.links from a NodeList to an array of TabLinks, each of which has this Tabs as a parent
-      return new TabLink(link, this);
+    this.links = Array.from(this.links).map((link) => { //Maps this.links from a NodeList to an array of TabLinks, each of which has a listener and a reference to its tab contents
+      const tabLink = new TabLink(link);
+      tabLink.tabItem = this.tabContents.find((content) => {  //Compares the data-tab values of the DOMs in tabContents to those in links, to get them paired up appropriately
+        if (content.element.dataset.tab === tabLink.element.dataset.tab) return content;
+      });
+      tabLink.element.addEventListener('click', (event) => {
+        this.updateActive(tabLink);
+        console.log(tabLink);
+        tabLink.select();
+      });
+      return tabLink;
     });
     this.activeLink = this.links[0];
+    console.log(this.activeLink);
     this.init();
   }
 
@@ -58,6 +61,7 @@ class Tabs {
   updateActive(newActive) {
     this.activeLink.deselect();// deselect the old active link
     this.activeLink = newActive;// assign the new active link
+    console.log(this.activeLink);
   }
 
   getTab(data) {
